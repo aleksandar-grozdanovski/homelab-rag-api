@@ -17,6 +17,42 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - rag-network
+
+  api:
+    build:
+      context: ./HomelabRAG.API
+      dockerfile: Dockerfile
+    container_name: homelab-rag-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=homelab_rag;Username=postgres;Password=postgres
+      - Ollama__BaseUrl=http://192.168.50.10:11434
+      - Ollama__Model=llama3.2
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rag-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: homelab-rag-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    networks:
+      - rag-network
+
+networks:
+  rag-network:
+    driver: bridge
 
 volumes:
   postgres_data:
