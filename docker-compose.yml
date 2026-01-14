@@ -28,13 +28,15 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=homelab_rag;Username=postgres;Password=postgres
-      - Ollama__BaseUrl=http://192.168.50.10:11434
+      - Ollama__BaseUrl=http://host.docker.internal:11434
       - Ollama__Model=llama3.2
     ports:
       - "5000:5000"
     depends_on:
       postgres:
         condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - rag-network
 
