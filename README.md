@@ -1,6 +1,6 @@
 # Homelab RAG API
 
-A **Retrieval-Augmented Generation (RAG)** API built with .NET 10 that allows you to chat with your homelab documentation using AI.
+A **Retrieval-Augmented Generation (RAG)** system built with .NET 10 that allows you to chat with your homelab documentation using AI. Includes a modern React chat interface.
 
 ## 🎯 What It Does
 
@@ -8,22 +8,46 @@ A **Retrieval-Augmented Generation (RAG)** API built with .NET 10 that allows yo
 - **Generates embeddings** using Ollama (Llama 3.2)
 - **Stores** 3072-dimensional vectors in PostgreSQL with pgvector
 - **Answers questions** based on your documentation with source citations
+- **Beautiful chat UI** with conversation history and source display
 
 ## 🏗️ Architecture
 
 ```
-User Question → Embedding (Ollama) → Vector Search (PostgreSQL) 
-→ Retrieve Top-K Similar Chunks → Send to LLM with Context 
-→ AI-Generated Answer + Sources
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐     ┌──────────────┐
+│   React     │────▶│  .NET API    │────▶│  Ollama     │────▶│  Llama 3.2   │
+│  Frontend   │     │  (RAG Logic) │     │  (Embedder) │     │  (LLM)       │
+└─────────────┘     └──────┬───────┘     └─────────────┘     └──────────────┘
+                           │
+                     ┌─────▼────────┐
+                     │  PostgreSQL  │
+                     │  + pgvector  │
+                     └──────────────┘
 ```
+
+**Flow:**
+1. User asks question in chat UI
+2. API generates embedding via Ollama
+3. Vector similarity search in PostgreSQL
+4. Retrieve top-K similar document chunks
+5. Send chunks + question to Llama 3.2
+6. Display AI answer with sources in UI
 
 ## 🛠️ Tech Stack
 
+**Backend:**
 - **.NET 10** (LTS) - Web API
 - **PostgreSQL 17** with **pgvector** - Vector database
 - **Ollama** (Llama 3.2) - Local LLM for embeddings & text generation
 - **Entity Framework Core 10** - ORM
+
+**Frontend:**
+- **React 18** + **TypeScript**
+- **TailwindCSS** + **shadcn/ui** - Modern UI components
+- **Nginx** - Static file serving + API proxy
+
+**Infrastructure:**
 - **Docker Compose** - Local development
+- **Kubernetes** - Production deployment (planned)
 
 ## 📋 Prerequisites
 
@@ -36,7 +60,28 @@ User Question → Embedding (Ollama) → Vector Search (PostgreSQL)
 
 ## 🚀 Quick Start
 
-### 1. Start PostgreSQL
+### Option 1: Docker Compose (Recommended)
+
+Start all services (PostgreSQL, API, Frontend):
+
+```bash
+docker compose up --build
+```
+
+Apply migrations:
+```bash
+cd HomelabRAG.API
+dotnet ef database update
+```
+
+**Access:**
+- Frontend: http://localhost:8080
+- API: http://localhost:5000
+- Database: localhost:5432
+
+### Option 2: Manual Setup
+
+#### 1. Start PostgreSQL
 
 ```bash
 docker compose up -d
