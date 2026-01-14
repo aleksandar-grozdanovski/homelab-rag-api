@@ -3,13 +3,13 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files from the frontend directory
 COPY HomelabRAG.Frontend/package.json HomelabRAG.Frontend/package-lock.json ./
 
 # Install dependencies
 RUN npm install --frozen-lockfile
 
-# Copy source code
+# Copy all source code from frontend directory
 COPY HomelabRAG.Frontend/ ./
 
 # Build the application
