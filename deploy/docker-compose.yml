@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: pgvector/pgvector:pg17
@@ -9,9 +7,9 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: homelab_rag
     ports:
-      - "5432:5432"
+      - "5433:5432"  # Different port to avoid conflict with legal chatbot
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - /srv/docker/volumes/homelab-rag/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -19,47 +17,41 @@ services:
       retries: 5
     networks:
       - rag-network
+    restart: unless-stopped
 
   api:
-    build:
-      context: ./HomelabRAG.API
-      dockerfile: Dockerfile
+    image: ghcr.io/aleksandar-grozdanovski/homelab-rag-api:latest
     container_name: homelab-rag-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=homelab_rag;Username=postgres;Password=postgres
-      - Ollama__BaseUrl=http://host.docker.internal:11434
+      - Ollama__BaseUrl=http://192.168.50.10:11434
       - Ollama__Model=llama3.2
-      - LLMProvider=${LLM_PROVIDER:-ollama}
-      - GroqSettings__ApiKey=${GROQ_API_KEY:-}
+      - LLMProvider=${LLM_PROVIDER:-groq}
+      - GroqSettings__ApiKey=${GROQ_API_KEY}
       - GroqSettings__ApiUrl=https://api.groq.com/openai/v1
       - GroqSettings__Model=llama-3.3-70b-versatile
-      - GroqSettings__Enabled=${GROQ_ENABLED:-false}
+      - GroqSettings__Enabled=${GROQ_ENABLED:-true}
     ports:
-      - "5000:5000"
+      - "5001:5000"  # Different port to avoid conflict
     depends_on:
       postgres:
         condition: service_healthy
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
       - rag-network
+    restart: unless-stopped
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
+    image: ghcr.io/aleksandar-grozdanovski/homelab-rag-frontend:latest
     container_name: homelab-rag-frontend
     ports:
-      - "8080:80"
+      - "8083:80"  # Different port to avoid conflict
     depends_on:
       - api
     networks:
       - rag-network
+    restart: unless-stopped
 
 networks:
   rag-network:
     driver: bridge
-
-volumes:
-  postgres_data:

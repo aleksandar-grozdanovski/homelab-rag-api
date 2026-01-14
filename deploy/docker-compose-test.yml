@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: homelab-rag-postgres-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: homelab_rag_test
+    ports:
+      - "5434:5432"
+    volumes:
+      - /srv/docker/volumes/homelab-rag-test/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag-network-test
+    restart: unless-stopped
+
+  api:
+    image: ghcr.io/aleksandar-grozdanovski/homelab-rag-api:test
+    container_name: homelab-rag-api-test
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=homelab_rag_test;Username=postgres;Password=postgres
+      - Ollama__BaseUrl=http://192.168.50.10:11434
+      - Ollama__Model=llama3.2
+      - LLMProvider=${LLM_PROVIDER:-groq}
+      - GroqSettings__ApiKey=${GROQ_API_KEY}
+      - GroqSettings__ApiUrl=https://api.groq.com/openai/v1
+      - GroqSettings__Model=llama-3.3-70b-versatile
+      - GroqSettings__Enabled=${GROQ_ENABLED:-true}
+    ports:
+      - "5002:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - rag-network-test
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/aleksandar-grozdanovski/homelab-rag-frontend:test
+    container_name: homelab-rag-frontend-test
+    ports:
+      - "8084:80"
+    depends_on:
+      - api
+    networks:
+      - rag-network-test
+    restart: unless-stopped
+
+networks:
+  rag-network-test:
+    driver: bridge

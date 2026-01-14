@@ -8,16 +8,16 @@ namespace HomelabRAG.API.Controllers;
 public class QueryController : ControllerBase
 {
     private readonly DocumentService _documentService;
-    private readonly OllamaService _ollamaService;
+    private readonly ILLMService _llmService;
     private readonly ILogger<QueryController> _logger;
 
     public QueryController(
         DocumentService documentService,
-        OllamaService ollamaService,
+        ILLMService llmService,
         ILogger<QueryController> logger)
     {
         _documentService = documentService;
-        _ollamaService = ollamaService;
+        _llmService = llmService;
         _logger = logger;
     }
 
@@ -46,8 +46,8 @@ public class QueryController : ControllerBase
             // Get context from chunks
             var context = similarChunks.Select(c => c.Content).ToList();
 
-            // Generate response using Ollama
-            var answer = await _ollamaService.GenerateResponseAsync(request.Question, context);
+            // Generate response using LLM
+            var answer = await _llmService.GenerateResponseAsync(request.Question, context);
 
             var sources = similarChunks.Select(c => new
             {

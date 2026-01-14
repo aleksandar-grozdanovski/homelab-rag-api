@@ -4,7 +4,7 @@ using Pgvector;
 
 namespace HomelabRAG.API.Services;
 
-public class OllamaService
+public class OllamaService : ILLMService
 {
     private readonly HttpClient _httpClient;
     private readonly string _baseUrl;

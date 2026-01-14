@@ -1,6 +1,7 @@
 using HomelabRAG.API.Data;
 using HomelabRAG.API.Services;
 using Microsoft.EntityFrameworkCore;
+using OpenAI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,8 +17,35 @@ builder.Services.AddDbContext<RAGDbContext>(options =>
     )
 );
 
-// Add application services
-builder.Services.AddScoped<OllamaService>();
+// Configure LLM service based on provider setting
+var llmProvider = builder.Configuration["LLMProvider"]?.ToLower() ?? "ollama";
+var groqEnabled = builder.Configuration.GetValue<bool>("GroqSettings:Enabled");
+
+if (groqEnabled || llmProvider == "groq")
+{
+    var apiKey = builder.Configuration["GroqSettings:ApiKey"] ?? "gsk-dummy-key";
+    var apiUrl = builder.Configuration["GroqSettings:ApiUrl"];
+    
+    Console.WriteLine($"Configuring Groq LLM service");
+    Console.WriteLine($"  API URL: {apiUrl}");
+    Console.WriteLine($"  API Key: {(string.IsNullOrEmpty(apiKey) ? "NOT SET" : apiKey.Substring(0, Math.Min(10, apiKey.Length)) + "...")}");
+    
+    // Add Groq (OpenAI-compatible) service
+    builder.Services.AddOpenAIService(settings =>
+    {
+        settings.ApiKey = apiKey;
+        settings.BaseDomain = apiUrl;
+        settings.Organization = string.Empty; // Not needed for Groq
+    });
+    builder.Services.AddScoped<ILLMService, GroqLLMService>();
+}
+else
+{
+    Console.WriteLine("Configuring Ollama LLM service");
+    // Add Ollama service (default)
+    builder.Services.AddScoped<ILLMService, OllamaService>();
+}
+
 builder.Services.AddScoped<DocumentService>();
 
 // Add CORS for development

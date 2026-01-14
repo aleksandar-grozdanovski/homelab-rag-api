@@ -10,13 +10,13 @@ namespace HomelabRAG.API.Services;
 public class DocumentService
 {
     private readonly RAGDbContext _context;
-    private readonly OllamaService _ollamaService;
+    private readonly ILLMService _llmService;
     private readonly ILogger<DocumentService> _logger;
 
-    public DocumentService(RAGDbContext context, OllamaService ollamaService, ILogger<DocumentService> logger)
+    public DocumentService(RAGDbContext context, ILLMService llmService, ILogger<DocumentService> logger)
     {
         _context = context;
-        _ollamaService = ollamaService;
+        _llmService = llmService;
         _logger = logger;
     }
 
@@ -59,7 +59,7 @@ public class DocumentService
             var chunkText = chunks[i];
             _logger.LogInformation("Generating embedding for chunk {Index}/{Total}", i + 1, chunks.Count);
             
-            var embedding = await _ollamaService.GenerateEmbeddingAsync(chunkText);
+            var embedding = await _llmService.GenerateEmbeddingAsync(chunkText);
             
             var chunk = new DocumentChunk
             {
@@ -80,7 +80,7 @@ public class DocumentService
 
     public async Task<List<DocumentChunk>> FindSimilarChunksAsync(string query, int topK = 5)
     {
-        var queryEmbedding = await _ollamaService.GenerateEmbeddingAsync(query);
+        var queryEmbedding = await _llmService.GenerateEmbeddingAsync(query);
         var queryVector = new Vector(queryEmbedding);
 
         var chunks = await _context.DocumentChunks
