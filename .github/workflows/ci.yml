@@ -25,6 +25,9 @@ jobs:
       - name: Restore
         run: dotnet restore ./HomelabRAG.API
 
+      - name: Clean
+        run: dotnet clean ./HomelabRAG.API
+
       - name: Build
         run: dotnet build ./HomelabRAG.API -c Release --no-restore
 
