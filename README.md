@@ -1,53 +1,48 @@
 # Homelab RAG API
 
-A **Retrieval-Augmented Generation (RAG)** system built with .NET 10 that allows you to chat with your homelab documentation using AI. Includes a modern React chat interface.
+> **Chat with your homelab documentation using AI**  
+> .NET 10 + React + PostgreSQL pgvector + Ollama (Llama 3.2)
 
-## 🎯 What It Does
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-- **Ingests** markdown documentation from your ObsidianVault
-- **Generates embeddings** using Ollama (Llama 3.2)
-- **Stores** 3072-dimensional vectors in PostgreSQL with pgvector
-- **Answers questions** based on your documentation with source citations
-- **Beautiful chat UI** with conversation history and source display
+A complete **Retrieval-Augmented Generation (RAG)** system for homelab documentation. Ask questions in natural language, get AI-generated answers with source citations.
 
-## 🏗️ Architecture
+## Quick Start
 
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐     ┌──────────────┐
-│   React     │────▶│  .NET API    │────▶│  Ollama     │────▶│  Llama 3.2   │
-│  Frontend   │     │  (RAG Logic) │     │  (Embedder) │     │  (LLM)       │
-└─────────────┘     └──────┬───────┘     └─────────────┘     └──────────────┘
-                           │
-                     ┌─────▼────────┐
-                     │  PostgreSQL  │
-                     │  + pgvector  │
-                     └──────────────┘
+```bash
+# Clone the repository
+git clone https://github.com/aleksandar-grozdanovski/homelab-rag-api.git
+cd homelab-rag-api
+
+# Start all services (PostgreSQL, API, Frontend)
+docker compose up --build -d
+
+# Access the chat interface
+open http://localhost:8080
 ```
 
-**Flow:**
-1. User asks question in chat UI
-2. API generates embedding via Ollama
-3. Vector similarity search in PostgreSQL
-4. Retrieve top-K similar document chunks
-5. Send chunks + question to Llama 3.2
-6. Display AI answer with sources in UI
+## Features
 
-## 🛠️ Tech Stack
+✅ **Semantic Search** - Vector embeddings with pgvector  
+✅ **Source Citations** - See which documents answered your question  
+✅ **Modern UI** - React + TypeScript chat interface  
+✅ **Local LLM** - Privacy-first with Ollama (no cloud dependencies)  
+✅ **Production Ready** - .NET 10 LTS, containerized, K8s-ready
 
-**Backend:**
-- **.NET 10** (LTS) - Web API
-- **PostgreSQL 17** with **pgvector** - Vector database
-- **Ollama** (Llama 3.2) - Local LLM for embeddings & text generation
-- **Entity Framework Core 10** - ORM
+## Documentation
 
-**Frontend:**
-- **React 18** + **TypeScript**
-- **TailwindCSS** + **shadcn/ui** - Modern UI components
-- **Nginx** - Static file serving + API proxy
+📚 **Complete setup guide**: See [RAG-API-Setup](ObsidianVault/02-Knowledge/Runbooks/RAG-API-Setup.md) in ObsidianVault  
+🧪 **Testing guide**: See [RAG-Testing](ObsidianVault/02-Knowledge/Runbooks/RAG-Testing.md)
 
-**Infrastructure:**
-- **Docker Compose** - Local development
-- **Kubernetes** - Production deployment (planned)
+## Architecture
+
+```
+React UI → .NET API → Ollama (embeddings) → PostgreSQL (vector search) → Llama 3.2 (generation)
+```
+
+## Tech Stack
+
+- .NET 10, PostgreSQL 17 + pgvector, React 18, Ollama, Docker
 
 ## 📋 Prerequisites
 
