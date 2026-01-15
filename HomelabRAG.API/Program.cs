@@ -25,6 +25,9 @@ if (groqEnabled || llmProvider == "groq")
 {
     var apiKey = builder.Configuration["GroqSettings:ApiKey"] ?? "gsk-dummy-key";
     var apiUrl = builder.Configuration["GroqSettings:ApiUrl"];
+    var baseDomain = string.IsNullOrWhiteSpace(apiUrl)
+        ? "https://api.groq.com/openai/v1"
+        : apiUrl;
     
     Console.WriteLine($"Configuring Groq LLM service");
     Console.WriteLine($"  API URL: {apiUrl}");
@@ -34,7 +37,7 @@ if (groqEnabled || llmProvider == "groq")
     builder.Services.AddOpenAIService(settings =>
     {
         settings.ApiKey = apiKey;
-        settings.BaseDomain = apiUrl;
+        settings.BaseDomain = baseDomain;
         settings.Organization = string.Empty; // Not needed for Groq
     });
     builder.Services.AddScoped<ILLMService, GroqLLMService>();
