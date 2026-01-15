@@ -37,9 +37,9 @@ public class QueryController : ControllerBase
             
             ILLMService? llmService = requestedProvider switch
             {
-                "groq" => _groqService,
-                "ollama" => _ollamaService,
-                _ => _groqService ?? _ollamaService
+                "groq" => _groqService as ILLMService,
+                "ollama" => _ollamaService as ILLMService,
+                _ => (ILLMService?)_groqService ?? _ollamaService
             };
 
             if (llmService == null)
