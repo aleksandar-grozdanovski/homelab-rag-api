@@ -17,37 +17,42 @@ builder.Services.AddDbContext<RAGDbContext>(options =>
     )
 );
 
-// Configure LLM service based on provider setting
-var llmProvider = builder.Configuration["LLMProvider"]?.ToLower() ?? "ollama";
-var groqEnabled = builder.Configuration.GetValue<bool>("GroqSettings:Enabled");
+// Configure LLM services - register both for runtime selection
+var groqApiKey = builder.Configuration["GroqSettings:ApiKey"] ?? "";
+var groqApiUrl = builder.Configuration["GroqSettings:ApiUrl"];
+var groqBaseDomain = string.IsNullOrWhiteSpace(groqApiUrl)
+    ? "https://api.groq.com/openai/v1"
+    : groqApiUrl;
 
-if (groqEnabled || llmProvider == "groq")
+Console.WriteLine($"Configuring LLM services:");
+
+// Always register Ollama
+Console.WriteLine("  ✓ Ollama service registered");
+builder.Services.AddScoped<OllamaService>();
+
+// Register Groq if API key is available
+if (!string.IsNullOrWhiteSpace(groqApiKey) && groqApiKey != "gsk-dummy-key")
 {
-    var apiKey = builder.Configuration["GroqSettings:ApiKey"] ?? "gsk-dummy-key";
-    var apiUrl = builder.Configuration["GroqSettings:ApiUrl"];
-    var baseDomain = string.IsNullOrWhiteSpace(apiUrl)
-        ? "https://api.groq.com/openai/v1"
-        : apiUrl;
+    Console.WriteLine($"  ✓ Groq service registered");
+    Console.WriteLine($"    API URL: {groqBaseDomain}");
+    Console.WriteLine($"    API Key: {groqApiKey.Substring(0, Math.Min(10, groqApiKey.Length))}...");
     
-    Console.WriteLine($"Configuring Groq LLM service");
-    Console.WriteLine($"  API URL: {apiUrl}");
-    Console.WriteLine($"  API Key: {(string.IsNullOrEmpty(apiKey) ? "NOT SET" : apiKey.Substring(0, Math.Min(10, apiKey.Length)) + "...")}");
-    
-    // Add Groq (OpenAI-compatible) service
     builder.Services.AddOpenAIService(settings =>
     {
-        settings.ApiKey = apiKey;
-        settings.BaseDomain = baseDomain;
-        settings.Organization = string.Empty; // Not needed for Groq
+        settings.ApiKey = groqApiKey;
+        settings.BaseDomain = groqBaseDomain;
+        settings.Organization = string.Empty;
     });
-    builder.Services.AddScoped<ILLMService, GroqLLMService>();
+    builder.Services.AddScoped<GroqLLMService>();
 }
 else
 {
-    Console.WriteLine("Configuring Ollama LLM service");
-    // Add Ollama service (default)
-    builder.Services.AddScoped<ILLMService, OllamaService>();
+    Console.WriteLine("  ⚠ Groq API key not configured - Groq provider will not be available");
 }
+
+// Set default provider based on configuration
+var defaultProvider = builder.Configuration["LLMProvider"]?.ToLower() ?? "groq";
+Console.WriteLine($"  Default provider: {defaultProvider}");
 
 builder.Services.AddScoped<DocumentService>();
 

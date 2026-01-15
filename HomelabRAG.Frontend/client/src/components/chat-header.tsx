@@ -1,6 +1,7 @@
 import { BookOpen, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
+import { LLMProviderToggle } from "./llm-provider-toggle";
 
 interface ChatHeaderProps {
   onNewChat: () => void;
@@ -31,6 +32,7 @@ export function ChatHeader({ onNewChat }: ChatHeaderProps) {
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">New Chat</span>
           </Button>
+          <LLMProviderToggle />
           <ThemeToggle />
         </div>
       </div>

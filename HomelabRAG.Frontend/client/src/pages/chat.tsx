@@ -6,9 +6,11 @@ import { MessageBubble } from "@/components/message-bubble";
 import { TypingIndicator } from "@/components/typing-indicator";
 import { ConversationStorage } from "@/lib/storage";
 import { API_ENDPOINTS } from "@/lib/api-config";
+import { useLLMProvider } from "@/lib/use-llm-provider";
 import type { Message } from "@/lib/storage";
 
 export default function ChatPage() {
+  const { provider } = useLLMProvider();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -61,6 +63,7 @@ export default function ChatPage() {
         body: JSON.stringify({
           question: content,
           topK: 5,
+          provider: provider,
         }),
       });
 

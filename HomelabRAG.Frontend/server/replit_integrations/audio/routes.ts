@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { chatStorage } from "../chat/storage";
-import { openai, speechToText, voiceChatWithTextModel } from "./client";
+import { speechToText, voiceChatWithTextModel } from "./client";
+import { getOpenAI } from "../openai";
 
 export function registerAudioRoutes(app: Express): void {
   // Get all conversations
@@ -66,6 +67,8 @@ export function registerAudioRoutes(app: Express): void {
         return res.status(400).json({ error: "Audio data (base64) is required" });
       }
 
+      const openai = getOpenAI();
+
       // 1. Transcribe user audio
       const audioBuffer = Buffer.from(audio, "base64");
       const userTranscript = await speechToText(audioBuffer, inputFormat);
@@ -119,6 +122,9 @@ export function registerAudioRoutes(app: Express): void {
       res.end();
     } catch (error) {
       console.error("Error processing voice message:", error);
+      if (error instanceof Error && error.message === "Missing OpenAI credentials") {
+        return res.status(503).json({ error: "OpenAI credentials not configured" });
+      }
       if (res.headersSent) {
         res.write(`data: ${JSON.stringify({ type: "error", error: "Failed to process voice message" })}\n\n`);
         res.end();
@@ -146,6 +152,8 @@ export function registerAudioRoutes(app: Express): void {
         role: m.role as "user" | "assistant",
         content: m.content,
       }));
+
+      void getOpenAI();
 
       // Set up SSE
       res.setHeader("Content-Type", "text/event-stream");
@@ -179,6 +187,9 @@ export function registerAudioRoutes(app: Express): void {
       res.end();
     } catch (error) {
       console.error("Error in voice stream:", error);
+      if (error instanceof Error && error.message === "Missing OpenAI credentials") {
+        return res.status(503).json({ error: "OpenAI credentials not configured" });
+      }
       if (res.headersSent) {
         res.write(`data: ${JSON.stringify({ type: "error", error: "Voice stream failed" })}\n\n`);
         res.end();

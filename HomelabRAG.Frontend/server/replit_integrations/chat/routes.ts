@@ -1,11 +1,6 @@
 import type { Express, Request, Response } from "express";
-import OpenAI from "openai";
 import { chatStorage } from "./storage";
-
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+import { getOpenAI } from "../openai";
 
 export function registerChatRoutes(app: Express): void {
   // Get all conversations
@@ -62,6 +57,7 @@ export function registerChatRoutes(app: Express): void {
   // Send message and get AI response (streaming)
   app.post("/api/conversations/:id/messages", async (req: Request, res: Response) => {
     try {
+      const openai = getOpenAI();
       const conversationId = parseInt(req.params.id);
       const { content } = req.body;
 
@@ -105,6 +101,9 @@ export function registerChatRoutes(app: Express): void {
       res.end();
     } catch (error) {
       console.error("Error sending message:", error);
+      if (error instanceof Error && error.message === "Missing OpenAI credentials") {
+        return res.status(503).json({ error: "OpenAI credentials not configured" });
+      }
       // Check if headers already sent (SSE streaming started)
       if (res.headersSent) {
         res.write(`data: ${JSON.stringify({ error: "Failed to send message" })}\n\n`);
@@ -115,4 +114,3 @@ export function registerChatRoutes(app: Express): void {
     }
   });
 }
-

@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { openai } from "./client";
+import { getOpenAI } from "../openai";
 
 export function registerImageRoutes(app: Express): void {
   app.post("/api/generate-image", async (req: Request, res: Response) => {
@@ -10,6 +10,7 @@ export function registerImageRoutes(app: Express): void {
         return res.status(400).json({ error: "Prompt is required" });
       }
 
+      const openai = getOpenAI();
       const response = await openai.images.generate({
         model: "gpt-image-1",
         prompt,
@@ -24,8 +25,10 @@ export function registerImageRoutes(app: Express): void {
       });
     } catch (error) {
       console.error("Error generating image:", error);
+      if (error instanceof Error && error.message === "Missing OpenAI credentials") {
+        return res.status(503).json({ error: "OpenAI credentials not configured" });
+      }
       res.status(500).json({ error: "Failed to generate image" });
     }
   });
 }
-
