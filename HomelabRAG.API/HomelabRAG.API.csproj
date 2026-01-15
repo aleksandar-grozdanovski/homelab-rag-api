@@ -5,7 +5,28 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultRazorGenerateItems>false</EnableDefaultRazorGenerateItems>
+    <EnableDefaultRazorComponentItems>false</EnableDefaultRazorComponentItems>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Controllers/DocumentsController.cs" />
+    <Compile Include="Controllers/QueryController.cs" />
+    <Compile Include="Data/RAGDbContext.cs" />
+    <Compile Include="Migrations/20260114103249_InitialCreate.cs" />
+    <Compile Include="Migrations/20260114103249_InitialCreate.Designer.cs" />
+    <Compile Include="Migrations/20260114103846_FixEmbeddingDimension.cs" />
+    <Compile Include="Migrations/20260114103846_FixEmbeddingDimension.Designer.cs" />
+    <Compile Include="Migrations/RAGDbContextModelSnapshot.cs" />
+    <Compile Include="Models/Document.cs" />
+    <Compile Include="Models/DocumentChunk.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Services/DocumentService.cs" />
+    <Compile Include="Services/GroqLLMService.cs" />
+    <Compile Include="Services/ILLMService.cs" />
+    <Compile Include="Services/OllamaService.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Betalgo.OpenAI" Version="8.7.2" />
