@@ -6,7 +6,7 @@
 const getApiBaseUrl = (): string => {
   // Check if we're in development (localhost)
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:5000';
+    return 'http://localhost:5113';
   }
   
   // In production, use same origin with /api prefix
