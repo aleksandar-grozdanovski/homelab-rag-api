@@ -71,6 +71,23 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Ensure database is created and migrated
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<RAGDbContext>();
+    try
+    {
+        Console.WriteLine("Ensuring database is created...");
+        dbContext.Database.EnsureCreated();
+        Console.WriteLine("Database ready.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error creating database: {ex.Message}");
+        throw;
+    }
+}
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
