@@ -45,13 +45,16 @@ services:
     image: ghcr.io/aleksandar-grozdanovski/homelab-rag-frontend:latest
     container_name: homelab-rag-frontend
     ports:
-      - "8083:80"  # Different port to avoid conflict
+      - "${FRONTEND_PORT:-8085}:80"  # Different port to avoid conflict
     depends_on:
       - api
     networks:
       - rag-network
+      - proxy
     restart: unless-stopped
 
 networks:
   rag-network:
     driver: bridge
+  proxy:
+    external: true

@@ -50,8 +50,11 @@ services:
       - api
     networks:
       - rag-network-test
+      - proxy
     restart: unless-stopped
 
 networks:
   rag-network-test:
     driver: bridge
+  proxy:
+    external: true
