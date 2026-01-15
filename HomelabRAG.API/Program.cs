@@ -26,9 +26,11 @@ var groqBaseDomain = string.IsNullOrWhiteSpace(groqApiUrl)
 
 Console.WriteLine($"Configuring LLM services:");
 
-// Always register Ollama
+// Always register Ollama (required for embeddings)
 Console.WriteLine("  ✓ Ollama service registered");
 builder.Services.AddScoped<OllamaService>();
+// Register as ILLMService for DocumentService (embeddings)
+builder.Services.AddScoped<ILLMService>(sp => sp.GetRequiredService<OllamaService>());
 
 // Register Groq if API key is available
 if (!string.IsNullOrWhiteSpace(groqApiKey) && groqApiKey != "gsk-dummy-key")
