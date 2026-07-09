@@ -1,38 +1,21 @@
 # Homelab RAG API
 
-> **Chat with your homelab documentation using AI**  
+> **Chat with your homelab documentation using AI**
 > .NET 10 + React + PostgreSQL pgvector + Ollama (Llama 3.2)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A complete **Retrieval-Augmented Generation (RAG)** system for homelab documentation. Ask questions in natural language, get AI-generated answers with source citations.
 
-## Quick Start
-
-```bash
-# Clone the repository
-git clone https://github.com/aleksandar-grozdanovski/homelab-rag-api.git
-cd homelab-rag-api
-
-# Start all services (PostgreSQL, API, Frontend)
-docker compose up --build -d
-
-# Access the chat interface
-open http://localhost:8080
-```
+Built to learn the full RAG stack end to end — chunking, embeddings, vector search, and grounded generation — with no cloud dependencies. It runs self-hosted on my single-node K3s cluster and answers questions about my own infrastructure docs.
 
 ## Features
 
-✅ **Semantic Search** - Vector embeddings with pgvector  
-✅ **Source Citations** - See which documents answered your question  
-✅ **Modern UI** - React + TypeScript chat interface  
-✅ **Local LLM** - Privacy-first with Ollama (no cloud dependencies)  
-✅ **Production Ready** - .NET 10 LTS, containerized, K8s-ready
-
-## Documentation
-
-📚 **Complete setup guide**: See [RAG-API-Setup](ObsidianVault/02-Knowledge/Runbooks/RAG-API-Setup.md) in ObsidianVault  
-🧪 **Testing guide**: See [RAG-Testing](ObsidianVault/02-Knowledge/Runbooks/RAG-Testing.md)
+✅ **Semantic Search** - Vector embeddings with pgvector
+✅ **Source Citations** - See which documents answered your question
+✅ **Modern UI** - React + TypeScript chat interface
+✅ **Local LLM** - Privacy-first with Ollama (no cloud dependencies)
+✅ **Containerized** - Docker Compose for local use, deployed to K3s via GitOps
 
 ## Architecture
 
@@ -60,14 +43,12 @@ React UI → .NET API → Ollama (embeddings) → PostgreSQL (vector search) →
 Start all services (PostgreSQL, API, Frontend):
 
 ```bash
-docker compose up --build
+git clone https://github.com/aleksandar-grozdanovski/homelab-rag-api.git
+cd homelab-rag-api
+docker compose up --build -d
 ```
 
-Apply migrations:
-```bash
-cd HomelabRAG.API
-dotnet ef database update
-```
+The API creates the database schema automatically on startup.
 
 **Access:**
 - Frontend: http://localhost:8080
@@ -79,23 +60,23 @@ dotnet ef database update
 #### 1. Start PostgreSQL
 
 ```bash
-docker compose up -d
+docker compose up -d postgres
 ```
 
-### 2. Apply Database Migrations
+#### 2. Apply Database Migrations
 
 ```bash
 cd HomelabRAG.API
 dotnet ef database update
 ```
 
-### 3. Run the API
+#### 3. Run the API
 
 ```bash
 dotnet run --urls="http://localhost:5000"
 ```
 
-### 4. Verify Health
+#### 4. Verify Health
 
 ```bash
 curl http://localhost:5000/healthz
@@ -151,7 +132,7 @@ Content-Type: application/json
 ```bash
 curl -X POST http://localhost:5000/api/documents/ingest-directory \
   -H "Content-Type: application/json" \
-  -d '{"directoryPath": "/home/user/ObsidianVault/02-Knowledge"}'
+  -d '{"directoryPath": "/home/user/docs"}'
 ```
 
 ### Ask a Question
@@ -229,17 +210,9 @@ Edit `appsettings.json`:
    - Cosine distance metric
    - Indexed for performance
 
-## 🚀 Deployment to Kubernetes
+## 🚀 Deployment
 
-*(Coming soon: Kubernetes manifests, GitOps with Flux)*
-
-## 📝 Interview Talking Points
-
-- "Built a production RAG system with .NET 10 and PostgreSQL pgvector"
-- "Integrated local LLM (Llama 3.2) for embeddings and text generation"
-- "Implemented vector similarity search for semantic document retrieval"
-- "Chunking strategy optimized for 3072-dimensional embeddings"
-- "Real-world application: Chat with homelab documentation"
+Runs on my single-node K3s cluster, deployed via GitOps: [homelab-gitops](https://github.com/aleksandar-grozdanovski/homelab-gitops) holds the Kubernetes manifests (API, PostgreSQL + pgvector, services), and Flux CD reconciles them — a `git push` there is the deployment. The server itself is provisioned by [homelab-ansible](https://github.com/aleksandar-grozdanovski/homelab-ansible).
 
 ## 🐛 Troubleshooting
 
@@ -276,17 +249,10 @@ Ensure `RAGDbContext.cs` has correct dimension:
 - [ ] Add streaming responses
 - [ ] Implement conversation memory
 - [ ] Add document re-ranking
-- [ ] Deploy to K3s cluster
-- [ ] GitOps with Flux CD
 - [ ] Prometheus metrics
-- [ ] Simple web UI
 - [ ] Support for PDF documents
 - [ ] Multi-model support (switch between Llama/Phi-3)
 
 ## 📄 License
 
 MIT
-
-## 👨‍💻 Author
-
-Built as part of Berlin Platform Engineer interview preparation - Week 8 AI Integration
