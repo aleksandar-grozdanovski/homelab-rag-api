@@ -34,22 +34,28 @@ public class DocumentsController : ControllerBase
         {
             return NotFound(new { error = ex.Message });
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { error = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error ingesting document: {FilePath}", request.FilePath);
-            return StatusCode(500, new { error = "Failed to ingest document", details = ex.Message });
+            return StatusCode(500, new { error = "Failed to ingest document" });
         }
     }
 
     [HttpPost("ingest-directory")]
     public async Task<IActionResult> IngestDirectory([FromBody] IngestDirectoryRequest request)
     {
-        if (!Directory.Exists(request.DirectoryPath))
+        IReadOnlyList<string> markdownFiles;
+        try
         {
-            return NotFound(new { error = $"Directory not found: {request.DirectoryPath}" });
+            markdownFiles = _documentService.GetAllowedMarkdownFiles(request.DirectoryPath);
         }
+        catch (DirectoryNotFoundException) { return NotFound(new { error = "Directory not found" }); }
+        catch (UnauthorizedAccessException ex) { return StatusCode(403, new { error = ex.Message }); }
 
-        var markdownFiles = Directory.GetFiles(request.DirectoryPath, "*.md", SearchOption.AllDirectories);
         var results = new List<object>();
 
         foreach (var file in markdownFiles)
@@ -78,7 +84,7 @@ public class DocumentsController : ControllerBase
 
         return Ok(new
         {
-            message = $"Processed {markdownFiles.Length} files",
+            message = $"Processed {markdownFiles.Count} files",
             results
         });
     }

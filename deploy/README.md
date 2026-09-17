@@ -94,12 +94,15 @@ environment:
 
 ### Environment Variables
 
-Edit `docker-compose.yml` to configure:
+Create `.env` from `.env.example` and configure:
 
 - `ConnectionStrings__DefaultConnection`: PostgreSQL connection string
 - `Ollama__BaseUrl`: Ollama server URL (default: http://192.168.50.10:11434)
 - `GroqSettings__ApiKey`: Groq API key for cloud LLM
 - `LLMProvider`: Choose between "ollama" or "groq"
+- `POSTGRES_PASSWORD`: required random database password
+- `API_KEY`: required random value of at least 32 characters; clients send it in `X-API-Key`
+- `DOCUMENTS_PATH`: the only host directory available for ingestion (mounted read-only)
 
 ## Accessing the Application
 
@@ -163,7 +166,8 @@ cat backup.sql | docker exec -i homelab-rag-postgres psql -U postgres homelab_ra
 
 ## Security Notes
 
-- Change default PostgreSQL password in production
+- PostgreSQL is not published on a host port; keep it on the private Compose network
+- Use unique random PostgreSQL and API credentials
 - Store API keys in environment files outside the repository
 - Consider using Docker secrets for sensitive data
 - Restrict network access using firewall rules

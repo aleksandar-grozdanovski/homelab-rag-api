@@ -48,12 +48,16 @@ cd homelab-rag-api
 docker compose up --build -d
 ```
 
+Before starting, copy `.env.example` to `.env` and replace `POSTGRES_PASSWORD`
+and `API_KEY` with independent random values. Set `DOCUMENTS_PATH` to the only
+host directory the API may ingest; it is mounted read-only at `/documents`.
+
 The API creates the database schema automatically on startup.
 
 **Access:**
 - Frontend: http://localhost:8080
 - API: http://localhost:5000
-- Database: localhost:5432
+- Database: internal Docker network only (not published on the host)
 
 ### Option 2: Manual Setup
 
@@ -94,9 +98,10 @@ GET /healthz
 ```bash
 POST /api/documents/ingest
 Content-Type: application/json
+X-API-Key: your-api-key
 
 {
-  "filePath": "/path/to/document.md"
+  "filePath": "/documents/document.md"
 }
 ```
 
@@ -104,9 +109,10 @@ Content-Type: application/json
 ```bash
 POST /api/documents/ingest-directory
 Content-Type: application/json
+X-API-Key: your-api-key
 
 {
-  "directoryPath": "/path/to/markdown/files"
+  "directoryPath": "/documents"
 }
 ```
 
@@ -132,13 +138,15 @@ Content-Type: application/json
 ```bash
 curl -X POST http://localhost:5000/api/documents/ingest-directory \
   -H "Content-Type: application/json" \
-  -d '{"directoryPath": "/home/user/docs"}'
+  -H "X-API-Key: $API_KEY" \
+  -d '{"directoryPath": "/documents"}'
 ```
 
 ### Ask a Question
 ```bash
 curl -X POST http://localhost:5000/api/query \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
   -d '{"question": "How do I install Flux CD?"}'
 ```
 
@@ -164,9 +172,8 @@ Edit `appsettings.json`:
 
 ```json
 {
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=homelab_rag;Username=postgres;Password=postgres"
-  },
+  "DocumentIngestion": { "AllowedBaseDirectory": "/documents" },
+  "Cors": { "AllowedOrigins": ["https://rag.example.com"] },
   "Ollama": {
     "BaseUrl": "http://192.168.50.10:11434",
     "Model": "llama3.2"

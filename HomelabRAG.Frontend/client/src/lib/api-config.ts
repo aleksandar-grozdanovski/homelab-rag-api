@@ -16,6 +16,20 @@ const getApiBaseUrl = (): string => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+export const getApiKey = (): string => {
+  const storageKey = 'homelab-rag-api-key';
+  const existing = window.sessionStorage.getItem(storageKey);
+  if (existing) return existing;
+
+  const supplied = window.prompt('Enter the Homelab RAG API key');
+  if (!supplied) throw new Error('An API key is required');
+  window.sessionStorage.setItem(storageKey, supplied);
+  return supplied;
+};
+
+export const clearApiKey = (): void =>
+  window.sessionStorage.removeItem('homelab-rag-api-key');
+
 export const API_ENDPOINTS = {
   query: `${API_BASE_URL}/api/query`,
   documents: `${API_BASE_URL}/api/documents`,

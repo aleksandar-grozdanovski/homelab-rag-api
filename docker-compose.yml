@@ -1,19 +1,15 @@
-version: '3.8'
-
 services:
   postgres:
     image: pgvector/pgvector:pg17
     container_name: homelab-rag-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-homelab_rag}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: homelab_rag
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-homelab_rag}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -27,7 +23,9 @@ services:
     container_name: homelab-rag-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=homelab_rag;Username=postgres;Password=postgres
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=homelab_rag;Username=${POSTGRES_USER:-homelab_rag};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      - ApiSecurity__ApiKey=${API_KEY:?Set API_KEY (at least 32 random characters) in .env}
+      - DocumentIngestion__AllowedBaseDirectory=/documents
       - Ollama__BaseUrl=http://host.docker.internal:11434
       - Ollama__Model=llama3.2
       - LLMProvider=${LLM_PROVIDER:-ollama}
@@ -42,6 +40,8 @@ services:
         condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - ${DOCUMENTS_PATH:-./documents}:/documents:ro
     networks:
       - rag-network
 

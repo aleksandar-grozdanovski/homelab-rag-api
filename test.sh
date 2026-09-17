@@ -5,6 +5,11 @@ echo "Homelab RAG System - Full Stack Test"
 echo "========================================="
 echo ""
 
+if [ -z "${API_KEY:-}" ]; then
+    echo "API_KEY must be exported before running this test."
+    exit 1
+fi
+
 # Test API Health
 echo "1. Testing API Health..."
 HEALTH=$(curl -s http://localhost:5000/healthz | jq -r '.status' 2>/dev/null)
@@ -29,14 +34,15 @@ fi
 # Check Documents
 echo ""
 echo "3. Checking ingested documents..."
-DOC_COUNT=$(curl -s http://localhost:5000/api/documents | jq 'length' 2>/dev/null)
+DOC_COUNT=$(curl -s -H "X-API-Key: $API_KEY" http://localhost:5000/api/documents | jq 'length' 2>/dev/null)
 if [ "$DOC_COUNT" -gt 0 ]; then
     echo "   ✅ Found $DOC_COUNT documents"
 else
     echo "   ⚠️  No documents found. Run ingestion:"
     echo "      curl -X POST http://localhost:5000/api/documents/ingest-directory \\"
     echo "        -H 'Content-Type: application/json' \\"
-    echo "        -d '{\"directoryPath\": \"/home/acedxl/Documents/HomeLab/ObsidianVault/02-Knowledge\"}'"
+    echo "        -H 'X-API-Key: your-api-key' \\"
+    echo "        -d '{\"directoryPath\": \"/documents\"}'"
     exit 1
 fi
 
@@ -45,6 +51,7 @@ echo ""
 echo "4. Testing RAG Query..."
 QUERY_RESULT=$(curl -s -X POST http://localhost:5000/api/query \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: $API_KEY" \
   -d '{"question": "How do I install Flux CD?", "topK": 3}' \
   | jq -r '.answer' 2>/dev/null | head -c 100)
 

@@ -2,8 +2,14 @@ using HomelabRAG.API.Data;
 using HomelabRAG.API.Services;
 using Microsoft.EntityFrameworkCore;
 using OpenAI.Extensions;
+using System.Security.Cryptography;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var apiKey = builder.Configuration["ApiSecurity:ApiKey"];
+if (string.IsNullOrWhiteSpace(apiKey) || apiKey.Length < 32)
+    throw new InvalidOperationException("ApiSecurity:ApiKey must be set to a random value of at least 32 characters.");
 
 // Add services to the container
 builder.Services.AddControllers();
@@ -37,7 +43,6 @@ if (!string.IsNullOrWhiteSpace(groqApiKey) && groqApiKey != "gsk-dummy-key")
 {
     Console.WriteLine($"  ✓ Groq service registered");
     Console.WriteLine($"    API URL: {groqBaseDomain}");
-    Console.WriteLine($"    API Key: {groqApiKey.Substring(0, Math.Min(10, groqApiKey.Length))}...");
     
     builder.Services.AddOpenAIService(settings =>
     {
@@ -58,14 +63,14 @@ Console.WriteLine($"  Default provider: {defaultProvider}");
 
 builder.Services.AddScoped<DocumentService>();
 
-// Add CORS for development
+// Only explicitly trusted browser origins may call the API.
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("TrustedOrigins", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        if (allowedOrigins.Length > 0)
+            policy.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader();
     });
 });
 
@@ -94,7 +99,24 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseCors("AllowAll");
+app.UseCors("TrustedOrigins");
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/api"))
+    {
+        var suppliedKey = context.Request.Headers["X-API-Key"].ToString();
+        var expectedBytes = Encoding.UTF8.GetBytes(apiKey);
+        var suppliedBytes = Encoding.UTF8.GetBytes(suppliedKey);
+        if (expectedBytes.Length != suppliedBytes.Length ||
+            !CryptographicOperations.FixedTimeEquals(expectedBytes, suppliedBytes))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await context.Response.WriteAsJsonAsync(new { error = "Unauthorized" });
+            return;
+        }
+    }
+    await next();
+});
 app.MapControllers();
 
 // Health check endpoint

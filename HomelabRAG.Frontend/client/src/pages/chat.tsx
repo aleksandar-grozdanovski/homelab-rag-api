@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/empty-state";
 import { MessageBubble } from "@/components/message-bubble";
 import { TypingIndicator } from "@/components/typing-indicator";
 import { ConversationStorage } from "@/lib/storage";
-import { API_ENDPOINTS } from "@/lib/api-config";
+import { API_ENDPOINTS, clearApiKey, getApiKey } from "@/lib/api-config";
 import { useLLMProvider } from "@/lib/use-llm-provider";
 import type { Message } from "@/lib/storage";
 
@@ -59,7 +59,10 @@ export default function ChatPage() {
       // Call .NET RAG API
       const response = await fetch(API_ENDPOINTS.query, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": getApiKey(),
+        },
         body: JSON.stringify({
           question: content,
           topK: 5,
@@ -68,6 +71,7 @@ export default function ChatPage() {
       });
 
       if (!response.ok) {
+        if (response.status === 401) clearApiKey();
         throw new Error(`API error: ${response.status}`);
       }
 

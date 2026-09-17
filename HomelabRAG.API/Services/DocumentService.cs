@@ -12,20 +12,22 @@ public class DocumentService
     private readonly RAGDbContext _context;
     private readonly ILLMService _llmService;
     private readonly ILogger<DocumentService> _logger;
+    private readonly string _allowedBaseDirectory;
 
-    public DocumentService(RAGDbContext context, ILLMService llmService, ILogger<DocumentService> logger)
+    public DocumentService(RAGDbContext context, ILLMService llmService, ILogger<DocumentService> logger, IConfiguration configuration)
     {
         _context = context;
         _llmService = llmService;
         _logger = logger;
+        var configuredBase = configuration["DocumentIngestion:AllowedBaseDirectory"];
+        if (string.IsNullOrWhiteSpace(configuredBase))
+            throw new InvalidOperationException("DocumentIngestion:AllowedBaseDirectory must be configured.");
+        _allowedBaseDirectory = ResolveExistingPath(configuredBase);
     }
 
     public async Task<Document> IngestDocumentAsync(string filePath)
     {
-        if (!File.Exists(filePath))
-        {
-            throw new FileNotFoundException($"File not found: {filePath}");
-        }
+        filePath = GetAllowedFilePath(filePath);
 
         var content = await File.ReadAllTextAsync(filePath);
         var fileName = Path.GetFileName(filePath);
@@ -76,6 +78,69 @@ public class DocumentService
         _logger.LogInformation("Successfully ingested {FileName} with {ChunkCount} chunks", fileName, chunks.Count);
 
         return document;
+    }
+
+    public string GetAllowedDirectoryPath(string directoryPath)
+    {
+        if (!Directory.Exists(directoryPath))
+            throw new DirectoryNotFoundException("Directory not found.");
+        var resolved = ResolveExistingPath(directoryPath);
+        EnsureContained(resolved);
+        return resolved;
+    }
+
+    public IReadOnlyList<string> GetAllowedMarkdownFiles(string directoryPath)
+    {
+        var root = GetAllowedDirectoryPath(directoryPath);
+        var results = new List<string>();
+        var pending = new Stack<string>();
+        var visited = new HashSet<string>(StringComparer.Ordinal);
+        pending.Push(root);
+
+        while (pending.TryPop(out var directory))
+        {
+            var resolvedDirectory = ResolveExistingPath(directory);
+            EnsureContained(resolvedDirectory);
+            if (!visited.Add(resolvedDirectory))
+                continue;
+
+            foreach (var file in Directory.EnumerateFiles(resolvedDirectory, "*.md"))
+                results.Add(GetAllowedFilePath(file));
+            foreach (var child in Directory.EnumerateDirectories(resolvedDirectory))
+                pending.Push(child);
+        }
+
+        return results;
+    }
+
+    private string GetAllowedFilePath(string filePath)
+    {
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException("File not found.");
+        var resolved = ResolveExistingPath(filePath);
+        EnsureContained(resolved);
+        return resolved;
+    }
+
+    private void EnsureContained(string path)
+    {
+        var relative = Path.GetRelativePath(_allowedBaseDirectory, path);
+        if (relative == ".." || relative.StartsWith($"..{Path.DirectorySeparatorChar}") || Path.IsPathRooted(relative))
+            throw new UnauthorizedAccessException("The requested path is outside the allowed document directory.");
+    }
+
+    private static string ResolveExistingPath(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        var root = Path.GetPathRoot(fullPath)!;
+        var current = root;
+        foreach (var component in fullPath[root.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+        {
+            current = Path.Combine(current, component);
+            FileSystemInfo info = Directory.Exists(current) ? new DirectoryInfo(current) : new FileInfo(current);
+            current = info.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? info.FullName;
+        }
+        return Path.GetFullPath(current);
     }
 
     public async Task<List<DocumentChunk>> FindSimilarChunksAsync(string query, int topK = 5)

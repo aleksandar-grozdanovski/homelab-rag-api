@@ -3,15 +3,13 @@ services:
     image: pgvector/pgvector:pg17
     container_name: homelab-rag-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-homelab_rag}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: homelab_rag
-    ports:
-      - "5433:5432"  # Different port to avoid conflict with legal chatbot
     volumes:
       - /srv/docker/volumes/homelab-rag/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-homelab_rag}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -24,7 +22,9 @@ services:
     container_name: homelab-rag-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=homelab_rag;Username=postgres;Password=postgres
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=homelab_rag;Username=${POSTGRES_USER:-homelab_rag};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      - ApiSecurity__ApiKey=${API_KEY:?Set API_KEY (at least 32 random characters) in .env}
+      - DocumentIngestion__AllowedBaseDirectory=/documents
       - Ollama__BaseUrl=http://192.168.50.10:11434
       - Ollama__Model=llama3.2
       - LLMProvider=${LLM_PROVIDER:-groq}
@@ -40,6 +40,8 @@ services:
     networks:
       - rag-network
     restart: unless-stopped
+    volumes:
+      - ${DOCUMENTS_PATH:?Set DOCUMENTS_PATH in .env}:/documents:ro
 
   frontend:
     image: ghcr.io/aleksandar-grozdanovski/homelab-rag-frontend:latest
